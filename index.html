@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>File Preview & Download</title>
+  <style>
+    *{
+      padding: 0;
+      margin: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: #f5f5f5;
+    }
+    .preview-box {
+      width: 700px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      margin-bottom: 20px;
+      border: 1px solid lightgray;
+      padding: 1rem;
+    }
+    .preview-box img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    .preview-box video {
+      max-width: 100%;
+      max-height: 100%;
+    }
+    .no-preview {
+      color: #777;
+      text-align: center;
+      padding: 20px;
+    }
+    .download-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      background: linear-gradient(135deg, #4a90e2, #357abd);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      text-decoration: none;
+      font-size: 16px;
+      font-weight: 600;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      min-width: 10rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .download-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 14px rgba(0,0,0,0.2);
+    }
+    .download-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: white;
+    }
+
+    #alterDownloadBtn{
+        background: white;
+        color: black;
+        box-shadow: inset 0 -1px #b5b5b5, inset 0 0 0 1px #0000001a, inset 0 .5px 0 1.5px #fff;
+        text-decoration: none;
+        padding: 5px;
+        padding-left: 10px;
+        padding-right: 10px;
+        font-size: 0.75em;
+        border-radius: 7px;
+    }
+
+    .loader {
+        border: 5px solid #f3f3f3; /* Light grey */
+        border-top: 5px solid #3498db; /* Blue */
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+    }
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+  </style>
+</head>
+<body>
+
+  <div class="preview-box" id="previewBox">
+    <!-- Preview will be injected here -->
+  </div>
+
+  <button id="main-btn" onclick="forceDownload()" class="download-btn" >
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+      <path d="M12 16l4-5h-3V4h-2v7H8l4 5zm-7 2v2h14v-2H5z"/>
+    </svg>
+   Download
+  </button>
+
+
+
+  <p style="font-size: 12px;margin-top: 25px;color: #0000004e;" >Having trouble with download? Try the alternative link.</p>
+  <a href="#" target="_blank" id="alterDownloadBtn" style="margin-top: 3px;" >Alternative Download</a>
+
+
+  <script>
+    // Example file URL (change this to your file)
+    const afterQuestionMark = window.location.href.split("?")[1] || "";
+    const fileUrl = `https://uploadmate.s3.ap-southeast-2.amazonaws.com${afterQuestionMark}`;
+
+    const previewBox = document.getElementById("previewBox");
+    const downloadBtn = document.getElementById("alterDownloadBtn");
+
+    function loadPreview(url) {
+      const extension = url.split(".").pop().toLowerCase();
+
+      let previewElement;
+
+      if (["jpg", "jpeg", "png", "gif", "webp"].includes(extension)) {
+        previewElement = document.createElement("img");
+        previewElement.src = url;
+        previewElement.alt = "Image Preview";
+      } 
+      else if (["mp4", "webm", "ogg"].includes(extension)) {
+        previewElement = document.createElement("video");
+        previewElement.src = url;
+        previewElement.controls = true;
+      } 
+      else {
+        previewElement = document.createElement("div");
+        previewElement.className = "no-preview";
+        previewElement.textContent = "Preview not available";
+      }
+
+      previewBox.innerHTML = "";
+      previewBox.appendChild(previewElement);
+
+      downloadBtn.href = fileUrl
+    }
+
+    loadPreview(fileUrl);
+
+    async function forceDownload() {
+    try {
+     const downloadButton = document.getElementById("main-btn")
+     downloadButton.innerHTML = `
+       <div class="loader"> </div>
+     `
+
+     const afterQuestionMark = window.location.href.split("?")[1] || "";
+     const fileUrl = `https://uploadmate.s3.ap-southeast-2.amazonaws.com${afterQuestionMark}`;
+     const response = await fetch(fileUrl, { mode: "cors" });
+     if (!response.ok) throw new Error("Network response was not ok");
+
+     const blob = await response.blob();
+
+     const link = document.createElement("a");
+     link.href = URL.createObjectURL(blob);
+     link.download = afterQuestionMark
+
+     document.body.appendChild(link);
+     link.click();
+
+     document.body.removeChild(link);
+     URL.revokeObjectURL(link.href); // Clean up memory
+
+     downloadButton.innerHTML = "Download"
+   } catch (error) {
+     console.error("Download failed:", error);
+   }
+}
+
+  </script>
+</body>
+</html>
